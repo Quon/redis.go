@@ -18,7 +18,7 @@ const (
     MaxPoolSize = 5
 )
 
-var defaultAddr = "127.0.0.1:7379"
+var defaultAddr = "127.0.0.1:6379"
 
 type Client struct {
     Addr     string
@@ -52,7 +52,7 @@ func readBulk(reader *bufio.Reader, head string) ([]byte, os.Error) {
     case '$':
         size, err := strconv.Atoi(strings.TrimSpace(head[1:]))
         if err != nil {
-            return nil, err
+            return nil, RedisError("$ reply is not a number")
         }
         if size == -1 {
             return nil, doesNotExist
@@ -105,8 +105,9 @@ func readResponse(reader *bufio.Reader) (interface{}, os.Error) {
         return strings.TrimSpace(line[1:]), nil
     }
 
-    if strings.HasPrefix(line, "-ERR ") {
-        errmesg := strings.TrimSpace(line[5:])
+    //in the 2.x protool only define an error message beginning with "-"
+	if strings.HasPrefix(line, "-") {
+        errmesg := strings.TrimSpace(line[1:])
         return nil, RedisError(errmesg)
     }
 
